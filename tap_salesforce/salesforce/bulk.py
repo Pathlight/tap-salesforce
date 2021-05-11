@@ -71,7 +71,11 @@ class Bulk():
         url = self.sf.data_url.format(self.sf.instance_url, endpoint)
 
         with metrics.http_request_timer(endpoint):
-            resp = self.sf._make_request('GET', url, headers=self.sf._get_standard_headers()).json()
+            try:
+                resp = self.sf._make_request('GET', url, headers=self.sf._get_standard_headers()).json()
+            except requests.exceptions.HTTPError as err:
+                # Probably means they don't have permissions to check bulk quotas.
+                return
 
         quota_max = resp['DailyBulkApiRequests']['Max']
         max_requests_for_run = int((self.sf.quota_percent_per_run * quota_max) / 100)
